@@ -1,0 +1,15 @@
+.react-slider {
+    height: 4px;
+    background-color: #ddd;
+}
+
+.react-slider__track {
+    background: #007bff;
+}
+
+.react-slider__thumb {
+    height: 24px;
+    width: 24px;
+    background: #007bff;
+    border-radius: 50%;
+}
