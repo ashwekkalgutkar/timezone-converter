@@ -7,9 +7,8 @@ import Header from "../components/Header";
 import { timezoneOptions } from "../utils/timezoneOptions";
 import moment from "moment-timezone";
 
-const HomePage = () => {
+const HomePage = ({ darkMode, toggleDarkMode }) => {
   const [timezones, setTimezones] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState(null);
 
   const handleAddTimezone = () => {
@@ -21,7 +20,7 @@ const HomePage = () => {
         ...prevTimezones,
         {
           ...selectedTimezone,
-          id: selectedTimezone.tz + Date.now(), // Ensure uniqueness
+          id: selectedTimezone.tz,
           sliderValue,
         },
       ]);
@@ -42,25 +41,24 @@ const HomePage = () => {
     if (!referenceTimezone) return;
 
     try {
+      // Reference time at the start of the day with new slider value
       const referenceTime = moment()
         .tz(referenceTimezone.tz)
         .startOf("day")
         .add(newValue, "minutes");
 
+      // Update each timezone based on the difference from the reference time
       const updatedTimezones = timezones.map((tz) => {
         if (tz.id === id) {
           return { ...tz, sliderValue: newValue };
         }
 
-        const referenceOffset = moment.tz(referenceTimezone.tz).utcOffset();
-        const targetOffset = moment.tz(tz.tz).utcOffset();
-
-        const offsetDifference = referenceOffset - targetOffset;
-        const targetSliderValue = newValue - offsetDifference;
-
+        // Calculate time difference and adjust slider value
+        const timezoneMoment = moment().tz(tz.tz).startOf("day");
+        const offsetDifference = referenceTime.diff(timezoneMoment, "minutes");
         return {
           ...tz,
-          sliderValue: targetSliderValue,
+          sliderValue: tz.sliderValue + offsetDifference,
         };
       });
 
@@ -68,10 +66,6 @@ const HomePage = () => {
     } catch (error) {
       console.error("Error in handleSliderChange:", error);
     }
-  };
-
-  const toggleDarkMode = () => {
-    setDarkMode((prevMode) => !prevMode);
   };
 
   return (
@@ -113,6 +107,11 @@ const HomePage = () => {
                     label="Add Time Zone, City or Town"
                     variant="outlined"
                     fullWidth
+                    sx={{
+                      backgroundColor: darkMode ? "#333" : "#fff",
+                      color: darkMode ? "#e0e0e0" : "#000",
+                      borderColor: darkMode ? "#444" : "#ccc",
+                    }}
                   />
                 )}
               />
@@ -121,33 +120,28 @@ const HomePage = () => {
               <IconButton
                 onClick={handleAddTimezone}
                 sx={{ mb: 1 }}
-                color="primary"
+                disabled={!selectedTimezone}
               >
                 <AddIcon />
               </IconButton>
-              <IconButton onClick={handleReverseOrder} color="primary">
+              <IconButton onClick={handleReverseOrder}>
                 <SwapVertIcon />
               </IconButton>
             </Grid>
           </Grid>
         </Box>
-
-        <Box
-          sx={{
-            mt: 3,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
+        <Box sx={{ mt: 2 }}>
           {timezones.map((timezone) => (
             <TimezoneItem
               key={timezone.id}
               id={timezone.id}
-              timezone={timezone.tz}
               sliderValue={timezone.sliderValue}
               onDelete={handleDeleteTimezone}
-              onSliderChange={handleSliderChange}
+              onSliderChange={(newValue) =>
+                handleSliderChange(timezone.id, newValue)
+              }
+              timezone={timezone.tz}
+              darkMode={darkMode}
             />
           ))}
         </Box>
